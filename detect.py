@@ -11,7 +11,7 @@ import cv2
 from models.retinaface import RetinaFace
 from utils.box_utils import decode, decode_landm
 import time
-
+from DTW import judgeGesture
 parser = argparse.ArgumentParser(description='Retinaface')
 
 parser.add_argument('-m', '--trained_model', default='./weights/mobilenet0.25_Final.pth',
@@ -148,12 +148,13 @@ def test_pictures():
 def test_video():
     cap=cv2.VideoCapture(0)
     frame_gestures=[]
+    ff=0
     while 1 :
         resize=1
         
         ret, frame = cap.read()
         frame=cv2.resize(frame,(320,320))
-        
+        ff=ff+1
         if cv2.waitKey(100) & 0xff == ord('q'):
             break
         img_raw = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
@@ -169,7 +170,8 @@ def test_video():
 
         tic = time.time()
         loc, conf = net(img)  # forward pass
-        print('net forward time: {:.4f}'.format(time.time() - tic))
+        #输出在网络推理中花费的时间
+        #print('net forward time: {:.4f}'.format(time.time() - tic))
 
         priorbox = PriorBox(cfg, image_size=(im_height, im_width))
         priors = priorbox.forward()
@@ -219,6 +221,7 @@ def test_video():
                 text1="({},{})".format((b[2]+b[0])/2,(b[3]+b[1])/2)
                 #cv2.putText(frame, text, (cx, cy),cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
                 cv2.putText(frame, text1, (cx, cy),cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
+                #if ff%2==0:
                 frame_gestures.append([(b[2]+b[0])/2,(b[3]+b[1])/2])
                 #
             # save image
@@ -242,14 +245,15 @@ if __name__ == '__main__':
     net = load_model(net, args.trained_model, args.cpu)
     net.eval()
     print('Finished loading model!')
-    print(net)
+    #打印每一层的细节
+    #print(net)
     cudnn.benchmark = True
     device = torch.device("cpu" if args.cpu else "cuda")
     net = net.to(device)
     #test_pictures()
     frameges=[]
     frameges=test_video()
-    print(frameges)
+    judgeGesture(frameges)
     
         
         
